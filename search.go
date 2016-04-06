@@ -337,6 +337,7 @@ func (s *SearchService) Do() (*SearchResult, error) {
 	} else {
 		body = s.searchSource.Source()
 	}
+
 	res, err := s.client.PerformRequest("POST", path, params, body)
 	if err != nil {
 		return nil, err

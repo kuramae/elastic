@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-
+//	"time"
 	"gopkg.in/olivere/elastic.v2/uritemplates"
 )
 
@@ -23,6 +23,7 @@ type ScrollService struct {
 	size      *int
 	pretty    bool
 	scrollId  string
+	fields    []string
 }
 
 func NewScrollService(client *Client) *ScrollService {
@@ -62,6 +63,14 @@ func (s *ScrollService) Types(types ...string) *ScrollService {
 		s.types = make([]string, 0)
 	}
 	s.types = append(s.types, types...)
+	return s
+}
+
+func (s *ScrollService) Fields(fields ...string) *ScrollService {
+	if s.fields == nil {
+		s.fields = make([]string, 0)
+	}
+	s.fields = append(s.fields, fields...)
 	return s
 }
 
@@ -145,7 +154,7 @@ func (s *ScrollService) GetFirstPage() (*SearchResult, error) {
 
 	// Parameters
 	params := make(url.Values)
-	params.Set("search_type", "scan")
+	//params.Set("search_type", "scan")
 	if s.pretty {
 		params.Set("pretty", fmt.Sprintf("%v", s.pretty))
 	}
@@ -154,14 +163,20 @@ func (s *ScrollService) GetFirstPage() (*SearchResult, error) {
 	} else {
 		params.Set("scroll", defaultKeepAlive)
 	}
-	if s.size != nil && *s.size > 0 {
-		params.Set("size", fmt.Sprintf("%d", *s.size))
-	}
 
 	// Set body
 	body := make(map[string]interface{})
 	if s.query != nil {
 		body["query"] = s.query.Source()
+	}
+
+	if s.size != nil && *s.size > 0 {
+		params.Set("size", fmt.Sprintf("%d", *s.size))
+
+	}
+
+	if s.fields != nil {
+		body["_source"] = s.fields
 	}
 
 	// Get response
@@ -198,17 +213,21 @@ func (s *ScrollService) GetNextPage() (*SearchResult, error) {
 		params.Set("scroll", defaultKeepAlive)
 	}
 
+//	start := time.Now().Unix()
 	// Get response
 	res, err := s.client.PerformRequest("POST", path, params, s.scrollId)
 	if err != nil {
 		return nil, err
 	}
+	//fmt.Println("Request took:", time.Now().Unix() - start)
 
 	// Return result
 	searchResult := new(SearchResult)
+//	start = time.Now().Unix()
 	if err := json.Unmarshal(res.Body, searchResult); err != nil {
 		return nil, err
 	}
+	//fmt.Println("Unmarshalling took:", time.Now().Unix() - start)
 
 	// Determine last page
 	if searchResult == nil || searchResult.Hits == nil || len(searchResult.Hits.Hits) == 0 || searchResult.Hits.TotalHits == 0 {
