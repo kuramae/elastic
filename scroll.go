@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-//	"time"
 	"gopkg.in/olivere/elastic.v2/uritemplates"
 )
 
@@ -154,7 +153,6 @@ func (s *ScrollService) GetFirstPage() (*SearchResult, error) {
 
 	// Parameters
 	params := make(url.Values)
-	//params.Set("search_type", "scan")
 	if s.pretty {
 		params.Set("pretty", fmt.Sprintf("%v", s.pretty))
 	}
@@ -213,7 +211,6 @@ func (s *ScrollService) GetNextPage() (*SearchResult, error) {
 		params.Set("scroll", defaultKeepAlive)
 	}
 
-//	start := time.Now().Unix()
 	// Get response
 	res, err := s.client.PerformRequest("POST", path, params, s.scrollId)
 	if err != nil {
@@ -223,11 +220,10 @@ func (s *ScrollService) GetNextPage() (*SearchResult, error) {
 
 	// Return result
 	searchResult := new(SearchResult)
-//	start = time.Now().Unix()
+
 	if err := json.Unmarshal(res.Body, searchResult); err != nil {
 		return nil, err
 	}
-	//fmt.Println("Unmarshalling took:", time.Now().Unix() - start)
 
 	// Determine last page
 	if searchResult == nil || searchResult.Hits == nil || len(searchResult.Hits.Hits) == 0 || searchResult.Hits.TotalHits == 0 {
